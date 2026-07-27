@@ -1,0 +1,315 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/icemanrod/safe-adoption-examples/schema/adoption-decision.v1.json",
+  "title": "Adoption decision packet, v1",
+  "description": "A recommendation about bringing one third-party repository inside, bound to one revision and one intended use. Not a certification. The authorization field is deliberately unfillable by a machine.",
+  "type": "object",
+  "required": [
+    "schema",
+    "source",
+    "intended_use",
+    "manifest",
+    "acquisition",
+    "findings",
+    "verdict",
+    "authorization"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema": {
+      "const": "adoption-decision/v1"
+    },
+    "note": {
+      "type": "string"
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "repo",
+        "resolved_commit"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "repo": {
+          "type": "string",
+          "format": "uri"
+        },
+        "resolved_commit": {
+          "type": "string",
+          "minLength": 7,
+          "description": "The exact revision reviewed. A decision applies to this and no other."
+        },
+        "requested_ref": {
+          "type": "string",
+          "description": "What was asked for. Kept separate from what it resolved to, because a moving ref is not a revision."
+        }
+      }
+    },
+    "intended_use": {
+      "type": "object",
+      "required": [
+        "component",
+        "environment",
+        "permissions"
+      ],
+      "additionalProperties": false,
+      "description": "The same code is a different question in a different role. A decision that omits this is not bounded.",
+      "properties": {
+        "component": {
+          "type": "string"
+        },
+        "environment": {
+          "type": "string"
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "required": [
+        "scanner",
+        "ruleset_sha256",
+        "coverage"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "scanner": {
+          "type": "string"
+        },
+        "ruleset_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40,64}$",
+          "description": "Which rules produced this. Changing them expires the decision."
+        },
+        "manifest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40,64}$"
+        },
+        "coverage": {
+          "type": "string"
+        },
+        "coverage_complete": {
+          "type": "boolean",
+          "description": "False when material was not obtained. Stated in the manifest so a reader meets it before the findings."
+        },
+        "acquired_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "acquisition": {
+      "type": "object",
+      "required": [
+        "complete",
+        "omissions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "complete": {
+          "type": "boolean"
+        },
+        "omissions": {
+          "type": "array",
+          "description": "Material that was never read. Recorded so nobody mistakes 'we saw nothing there' for 'there is nothing there'.",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "kind"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "submodule_not_fetched",
+                  "binary_not_source",
+                  "lfs_pointer",
+                  "symlink_out_of_tree",
+                  "not_in_repository",
+                  "not_establishable",
+                  "excluded_by_scope"
+                ]
+              },
+              "note": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "description": "Observations from material that WAS read. Empty is a legitimate answer; read it alongside acquisition.omissions.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "path",
+          "severity",
+          "adopter_can_verify",
+          "summary"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "BLOCK",
+              "HOLD",
+              "REMEDIATE",
+              "ACCEPT_RISK"
+            ]
+          },
+          "adopter_can_verify": {
+            "type": "boolean",
+            "description": "Whether the reader can confirm this themselves. False means only the maintainer can, and the finding must not be reported as settled."
+          },
+          "owner_only_signals": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Why it needs the owner. Non-empty requires adopter_can_verify false."
+          },
+          "summary": {
+            "type": "string"
+          },
+          "why_it_matters": {
+            "type": "string"
+          },
+          "named_fix": {
+            "type": "string",
+            "description": "Required in practice for REMEDIATE."
+          },
+          "reproduction_or_verification": {
+            "type": "string",
+            "description": "How the reader confirms it. Must never instruct active testing against a system the reader has no authority over."
+          }
+        }
+      }
+    },
+    "findings_note": {
+      "type": "string"
+    },
+    "unresolvable": {
+      "type": "array",
+      "description": "Questions kept open rather than guessed.",
+      "items": {
+        "type": "object",
+        "required": [
+          "question",
+          "why"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "why": {
+            "type": "string"
+          },
+          "blocks": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "verdict": {
+      "type": "object",
+      "required": [
+        "recommendation",
+        "not_a_certification",
+        "expires_when"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "recommendation": {
+          "type": "string",
+          "enum": [
+            "BLOCK",
+            "HOLD",
+            "REMEDIATE",
+            "ACCEPT"
+          ]
+        },
+        "not_a_certification": {
+          "const": true,
+          "description": "Required and required to be true. The format may not be used to issue a certification."
+        },
+        "basis": {
+          "type": "string",
+          "enum": [
+            "findings",
+            "coverage_boundary"
+          ],
+          "description": "coverage_boundary distinguishes 'we found a problem' from 'we cannot tell from here' - materially different for a reader."
+        },
+        "scope_of_claim": {
+          "type": "string"
+        },
+        "conditions_for_accept": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expires_when": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "description": "A decision with no expiry is a certification wearing a different hat."
+        }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "required": [
+        "authorized_by",
+        "authorized_at"
+      ],
+      "additionalProperties": true,
+      "description": "Deliberately present and deliberately unfilled by the reviewer. Authorization is a human act performed by somebody who accepts the risk.",
+      "properties": {
+        "authorized_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "authorized_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

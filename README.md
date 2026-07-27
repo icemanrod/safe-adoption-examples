@@ -1,11 +1,12 @@
 # Safe Adoption Examples
 
-Two worked examples of a **decision packet** — the artifact produced when
+Five worked examples of a **decision packet** — the artifact produced when
 somebody reviews a third-party repository before pulling it into their systems.
 
-One example ends in **HOLD**. One ends in **ACCEPT**. Both ship the evidence, the
-sealed manifest, and the things that could *not* be resolved, so you can see what
-a defensible adoption decision actually looks like — including where it stops
+All four verdicts are represented, plus the case nobody wants to publish: the one
+where the honest answer is *we cannot tell from out here.* Each ships the
+evidence, the sealed manifest, and the questions that stayed open — so you can
+see what a defensible adoption decision looks like, including where it stops
 short.
 
 [![verify](https://github.com/icemanrod/safe-adoption-examples/actions/workflows/verify.yml/badge.svg)](https://github.com/icemanrod/safe-adoption-examples/actions/workflows/verify.yml)
@@ -33,27 +34,32 @@ A decision packet answers those questions in a form that survives:
 
 ## The examples
 
-### `risky-payments-sdk/` — verdict: **HOLD**
-
-A payment SDK with adopter-visible problems:
-
-| Finding | Where | Who can verify |
+| Example | Verdict | Why it is here |
 |---|---|---|
-| Full webhook payload logged before signature verification | `apps/webhooks/handler.ts:320` | adopter, from source |
-| Undocumented `PAYMENT_SDK_TEST_MODE` disables rate limiting | `lib/env.ts` | adopter, from source |
-| `test-fixtures` submodule never fetched | `config/submodules` | recorded as an **omission**, not a finding |
+| [`hostile-installer/`](hostile-installer/) | **BLOCK** | Install hook executes remote content, and hides from CI |
+| [`risky-payments-sdk/`](risky-payments-sdk/) | **HOLD** | Real defect whose blocking question only the maintainer can answer |
+| [`opaque-vendor-blob/`](opaque-vendor-blob/) | **HOLD** | 0 findings, 4 omissions — the "we cannot tell from here" case |
+| [`fixable-logger/`](fixable-logger/) | **REMEDIATE** | One bounded defect with a named fix |
+| [`safe-utils/`](safe-utils/) | **ACCEPT** | Small enough to read end to end |
 
-It is HOLD rather than BLOCK for a specific reason: the blocking question — *how
-long are those logs retained?* — **cannot be answered from outside the project**.
-The packet says so and names what would turn it into ACCEPT, instead of inventing
-a clean bill of health.
+The format is specified in [SPEC.md](SPEC.md) and enforced by
+[`schema/adoption-decision.v1.json`](schema/adoption-decision.v1.json).
 
-### `safe-utils/` — verdict: **ACCEPT**
+### The two worth reading first
 
-A small utility library with no credential handling, no network, no environment
-reads, and a surface small enough to read end to end. The packet is explicit that
-ACCEPT means *no adopter-visible blocking issues were found in the material read,
-for this use, at this revision* — not that the library is free of defects.
+**[`hostile-installer/`](hostile-installer/) — BLOCK.** A `postinstall` hook that
+posts your hostname and username to a remote endpoint, then executes whatever
+comes back. It also returns early when `CI` is set, so the people most likely to
+look are the least likely to see it. BLOCK carries **no conditions for accept**:
+the capability is the problem, not its configuration, and no assurance from the
+maintainer changes that.
+
+**[`opaque-vendor-blob/`](opaque-vendor-blob/) — HOLD, with zero findings.** The
+readable source is 22 lines and there is nothing wrong with any of it. All the
+behaviour lives in a compiled blob that was never read, behind a submodule that
+never resolved. A review reporting only what it read would file zero findings and
+imply "clean". This packet records **4 omissions** and holds — because *we did
+not look there* and *there is nothing there* are different sentences.
 
 ## What is in each example
 
@@ -70,10 +76,17 @@ example/
 Every path a packet cites exists in the tree, at the line it claims:
 
 ```bash
-python3 tools/verify_citations.py
+python3 tools/verify_citations.py   # citations resolve to real source
+python3 tools/validate_packets.py   # packets conform to the v1 schema
 ```
 
-No dependencies, read-only, and it runs in CI on every push.
+No dependencies, read-only, and both run in CI on every push.
+
+The validator also enforces three rules the schema cannot express: a finding
+that needs the maintainer cannot also be marked verifiable by the reader, a
+REMEDIATE finding must name its fix, and **`authorization.authorized_by` must be
+null** — a reviewer who fills it in has forged the one field they cannot
+perform.
 
 This matters more than it sounds. The first version of these examples cited three
 files that **were not in the repository at all** — `apps/webhooks/handler.ts`,

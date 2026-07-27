@@ -21,3 +21,6 @@ jobs:
           python-version: "3.12"
       - name: Every citation resolves to real source
         run: python3 tools/verify_citations.py
+
+      - name: Every packet conforms to adoption-decision/v1
+        run: python3 tools/validate_packets.py

@@ -32,11 +32,17 @@
 |------|--------|
 | Repository cloned | ✓ |
 | Revision fetched | ✓ a1b2c3d4e5f6g7h8 |
-| Submodules | ⚠ `config/submodules` not fully fetched |
+| Submodules | ⚠ `test-fixtures` never fetched (declared in `config/submodules`, which WAS read) |
 | LFS pointers | ✓ None |
 | Symlinks out of tree | ✓ None |
 
-**Boundary**: Acquisition is complete except for documented submodule gap. Not a finding; intentional omission.
+**Boundary**: acquisition is complete except for one submodule. The manifest
+`config/submodules` was read and is present; the path it declares,
+`test-fixtures`, was never fetched. That distinction is the point — the omission
+is the unfetched material, not the file that documents it.
+
+Recorded as an omission, not a finding. Nothing was read there, so nothing is
+claimed about it.
 
 ---
 

@@ -25,6 +25,7 @@ What it does NOT check, on purpose
 
 from __future__ import annotations
 
+import json
 import pathlib
 import re
 import sys
@@ -48,12 +49,54 @@ def examples() -> list[pathlib.Path]:
     )
 
 
+def omission_paths(text: str, json_path: pathlib.Path | None = None) -> set[str]:
+    """Paths the packet records as NOT read.
+
+    A finding and an omission make opposite claims, and a checker that cannot
+    tell them apart cannot check this format. A finding says "we read this and
+    here is what we saw" - its evidence must be openable. An omission says "we
+    never obtained this" - and demanding that absent material be present would
+    force a packet to either fabricate the file or stop recording the gap.
+    Both outcomes are worse than the gap itself.
+
+    So paths under `## Omissions`, and rows in the acquisition table marked with
+    a warning glyph, are exempt from the must-exist rule below.
+    """
+    exempt: set[str] = set()
+
+    # Prefer the machine-readable packet. `acquisition.omissions` states the
+    # gaps as data, so there is no guessing. Reading them out of prose was the
+    # first approach here and it was wrong: a sentence that names BOTH the
+    # unfetched path and the manifest documenting it marks both as absent, and
+    # the manifest is right there on disk. Derive from the structure, not from
+    # the paragraph describing the structure.
+    if json_path and json_path.exists():
+        try:
+            data = json.loads(json_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            data = {}
+        for omission in (data.get("acquisition") or {}).get("omissions") or []:
+            path = (omission or {}).get("path", "")
+            # Parenthesised entries like "(build pipeline)" are prose, not paths.
+            if path and not path.startswith("("):
+                exempt.add(path)
+        return exempt
+
+    # Fallback for a packet with no JSON beside it: take the Omissions section.
+    section = re.search(r"^##\s+Omissions\s*$(.*?)(?=^##\s|\Z)", text, re.M | re.S)
+    if section:
+        for match in CITATION.finditer(section.group(1)):
+            exempt.add(match.group("path"))
+    return exempt
+
+
 def check(example: pathlib.Path) -> list[str]:
     packet = example / PACKET
     text = packet.read_text(encoding="utf-8")
     rel = packet.relative_to(ROOT)
     problems: list[str] = []
     seen: set[tuple[str, str | None]] = set()
+    exempt = omission_paths(text, example / "adoption-decision.json")
 
     for match in list(CITATION.finditer(text)) + list(PATH_FIELD.finditer(text)):
         cited = match.group("path")
@@ -61,6 +104,17 @@ def check(example: pathlib.Path) -> list[str]:
         if (cited, line_no) in seen:
             continue
         seen.add((cited, line_no))
+
+        if cited in exempt:
+            # Recorded as never obtained. If it turns out to BE here, that is
+            # worth saying: the packet claims material was out of reach while
+            # sitting next to it, and a reader deserves to know which is true.
+            if (example / cited).exists():
+                problems.append(
+                    f"{rel}: records `{cited}` as an omission, but it exists in "
+                    f"the tree. Either it was read, or the omission is stale."
+                )
+            continue
 
         target = example / cited
         # An example may not reach outside itself; a citation that escapes is a

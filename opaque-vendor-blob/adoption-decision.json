@@ -1,0 +1,89 @@
+{
+  "schema": "adoption-decision/v1",
+  "note": "Synthetic example. Demonstrates a coverage boundary rather than a defect.",
+  "source": {
+    "repo": "https://github.com/example/opaque-vendor-blob",
+    "resolved_commit": "2f3a4b5c6d7e8f90",
+    "requested_ref": "v2.0.1"
+  },
+  "intended_use": {
+    "component": "text processing in a request path",
+    "environment": "production",
+    "permissions": [
+      "read",
+      "process-user-input"
+    ]
+  },
+  "manifest": {
+    "scanner": "repo-sentinel",
+    "ruleset_sha256": "3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a",
+    "manifest_sha256": "8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b",
+    "coverage": "static \u00b7 no execution \u00b7 adopter-safe rendering",
+    "coverage_complete": false,
+    "acquired_at": "2026-07-27T19:34:18Z"
+  },
+  "acquisition": {
+    "complete": false,
+    "omissions": [
+      {
+        "path": "vendor/engine",
+        "kind": "binary_not_source",
+        "note": "Compiled engine. Static source review does not apply. Contains all real behaviour."
+      },
+      {
+        "path": "vendor/engine-src",
+        "kind": "submodule_not_fetched",
+        "note": "Declared in .gitmodules against a host that does not resolve publicly."
+      },
+      {
+        "path": "(build pipeline)",
+        "kind": "not_in_repository",
+        "note": "Nothing describes how the binary was produced or from which revision."
+      },
+      {
+        "path": "(binary-source correspondence)",
+        "kind": "not_establishable",
+        "note": "Requires a reproducible build or maintainer-published provenance."
+      }
+    ]
+  },
+  "findings": [],
+  "findings_note": "Zero findings means nothing objectionable was found in the material READ. Read alongside acquisition.omissions, which is where this package's behaviour lives.",
+  "unresolvable": [
+    {
+      "question": "What does transform() do?",
+      "why": "Only answerable by reading engine source or executing the binary; this review does neither."
+    },
+    {
+      "question": "Was the shipped binary built from the declared source?",
+      "why": "Requires reproducible builds or published provenance."
+    },
+    {
+      "question": "Does the engine make network calls?",
+      "why": "Not determinable from a binary without dynamic analysis, which is out of scope."
+    }
+  ],
+  "verdict": {
+    "recommendation": "HOLD",
+    "not_a_certification": true,
+    "basis": "coverage_boundary",
+    "scope_of_claim": "Not a defect finding. The package cannot be assessed for the stated use with the material available to an outside reader.",
+    "why_not_accept": "ACCEPT would be technically true and profoundly misleading: the material read is a thin wrapper around everything that matters.",
+    "why_not_block": "Nothing observed is hostile. Vendoring a compiled engine is ordinary practice.",
+    "conditions_for_accept": [
+      "Reproducible build instructions that reproduce the shipped binary bit-for-bit, or",
+      "vendor/engine-src made publicly fetchable at the built revision, plus a signature binding the two, or",
+      "Intended use narrowed to a sandboxed context with no network and no untrusted input."
+    ],
+    "expires_when": [
+      "resolved_commit changes",
+      "intended_use changes",
+      "ruleset_sha256 changes"
+    ]
+  },
+  "authorization": {
+    "authorized_by": null,
+    "authorized_at": null,
+    "note": "Left null on purpose."
+  }
+}

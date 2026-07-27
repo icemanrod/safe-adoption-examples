@@ -1,0 +1,80 @@
+{
+  "schema": "adoption-decision/v1",
+  "note": "Synthetic example. Deliberately hostile. Nothing here is live or executed.",
+  "source": {
+    "repo": "https://github.com/example/hostile-installer",
+    "resolved_commit": "c7d8e9f0a1b2c3d4",
+    "requested_ref": "v3.1.0"
+  },
+  "intended_use": {
+    "component": "build-time dependency",
+    "environment": "developer machines and CI",
+    "permissions": [
+      "install"
+    ]
+  },
+  "manifest": {
+    "scanner": "repo-sentinel",
+    "ruleset_sha256": "3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a",
+    "manifest_sha256": "4c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d",
+    "coverage": "static \u00b7 no execution \u00b7 adopter-safe rendering",
+    "acquired_at": "2026-07-27T19:12:40Z"
+  },
+  "acquisition": {
+    "complete": true,
+    "omissions": []
+  },
+  "findings": [
+    {
+      "id": "remote-exec-1",
+      "path": "scripts/postinstall.js",
+      "line": 63,
+      "severity": "BLOCK",
+      "adopter_can_verify": true,
+      "owner_only_signals": [],
+      "summary": "The response body from a remote endpoint is passed to execSync at install time.",
+      "why_it_matters": "Whoever controls the endpoint controls what runs on the installing machine, as the installing user.",
+      "reproduction_or_verification": "Read scripts/postinstall.js line 63, and package.json scripts.postinstall."
+    },
+    {
+      "id": "exfil-before-fetch-1",
+      "path": "scripts/postinstall.js",
+      "line": 31,
+      "severity": "BLOCK",
+      "adopter_can_verify": true,
+      "owner_only_signals": [],
+      "summary": "Username, hostname, cwd and platform are POSTed before the fetch.",
+      "why_it_matters": "The operator can target delivery per-installer, so one benign observation proves nothing about the next.",
+      "reproduction_or_verification": "Read collect() and fetchBootstrap() in scripts/postinstall.js."
+    },
+    {
+      "id": "ci-evasion-1",
+      "path": "scripts/postinstall.js",
+      "line": 23,
+      "severity": "BLOCK",
+      "adopter_can_verify": true,
+      "owner_only_signals": [],
+      "summary": "The routine returns early when CI is set or stdout is not a TTY.",
+      "why_it_matters": "The behaviour is suppressed exactly where a maintainer would look for it.",
+      "reproduction_or_verification": "Read isAutomated() and its use at the top of main()."
+    }
+  ],
+  "unresolvable": [],
+  "verdict": {
+    "recommendation": "BLOCK",
+    "not_a_certification": true,
+    "scope_of_claim": "The code at this revision should not be adopted for the stated use. This is not a claim about the maintainer's intent, or about any other revision.",
+    "conditions_for_accept": [],
+    "why_no_conditions": "The capability is the problem, not its configuration. No assurance changes arbitrary remote execution at install time into an acceptable risk.",
+    "expires_when": [
+      "resolved_commit changes",
+      "intended_use changes",
+      "ruleset_sha256 changes"
+    ]
+  },
+  "authorization": {
+    "authorized_by": null,
+    "authorized_at": null,
+    "note": "Left null on purpose."
+  }
+}

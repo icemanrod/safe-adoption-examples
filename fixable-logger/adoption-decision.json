@@ -1,0 +1,60 @@
+{
+  "schema": "adoption-decision/v1",
+  "note": "Synthetic example.",
+  "source": {
+    "repo": "https://github.com/example/fixable-logger",
+    "resolved_commit": "5e6f7a8b9c0d1e2f",
+    "requested_ref": "v0.9.4"
+  },
+  "intended_use": {
+    "component": "application logging",
+    "environment": "production",
+    "permissions": [
+      "read"
+    ]
+  },
+  "manifest": {
+    "scanner": "repo-sentinel",
+    "ruleset_sha256": "3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a",
+    "manifest_sha256": "7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c",
+    "coverage": "static \u00b7 no execution \u00b7 adopter-safe rendering",
+    "acquired_at": "2026-07-27T19:20:03Z"
+  },
+  "acquisition": {
+    "complete": true,
+    "omissions": []
+  },
+  "findings": [
+    {
+      "id": "shallow-redaction-1",
+      "path": "src/redact.ts",
+      "line": 35,
+      "severity": "REMEDIATE",
+      "adopter_can_verify": true,
+      "owner_only_signals": [],
+      "summary": "redact() checks keys at the top level only; nested sensitive values pass through.",
+      "why_it_matters": "Structured loggers nest by default, so the common record shape defeats the redaction.",
+      "named_fix": "Recurse into plain objects and arrays before assigning, treating a nested match as a top-level one.",
+      "reproduction_or_verification": "Read src/redact.ts line 35: the key is tested, the value is assigned through."
+    }
+  ],
+  "unresolvable": [],
+  "verdict": {
+    "recommendation": "REMEDIATE",
+    "not_a_certification": true,
+    "scope_of_claim": "One bounded defect, fixable by a named change. Not a claim that no other defect exists.",
+    "conditions_for_accept": [
+      "Redaction descends into nested objects and arrays, with a test covering { user: { token } }."
+    ],
+    "expires_when": [
+      "resolved_commit changes",
+      "intended_use changes",
+      "ruleset_sha256 changes"
+    ]
+  },
+  "authorization": {
+    "authorized_by": null,
+    "authorized_at": null,
+    "note": "Left null on purpose."
+  }
+}

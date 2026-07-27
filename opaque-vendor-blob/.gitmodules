@@ -1,0 +1,4 @@
+[submodule "vendor/engine-src"]
+	path = vendor/engine-src
+	url = https://git.example-internal.invalid/engine.git
+	# Host does not resolve publicly. Never fetched.
