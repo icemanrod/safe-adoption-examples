@@ -50,9 +50,9 @@
 
 ```typescript
 // Line 320
-logger.info('Webhook received', request.body);  // ← logged before validation
+logger.info("Webhook received", request.body);  // ← logged before validation
 // Line 322–327
-const signature = request.headers['x-stripe-signature'];
+const signature = request.headers["x-stripe-signature"] as string | undefined;
 if (!verifySignature(signature, request.body, secret)) {
   return 401;
 }

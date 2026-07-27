@@ -1,0 +1,23 @@
+name: verify
+
+# The examples make checkable claims. This runs the check on every push, so a
+# packet that drifts from its source fails here rather than in front of a reader.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  citations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Every citation resolves to real source
+        run: python3 tools/verify_citations.py

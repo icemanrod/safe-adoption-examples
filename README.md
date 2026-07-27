@@ -1,64 +1,129 @@
 # Safe Adoption Examples
 
-Two example repositories with Repo Sentinel decision packets.
+Two worked examples of a **decision packet** — the artifact produced when
+somebody reviews a third-party repository before pulling it into their systems.
 
-One **fails** adoption review. One **passes**. Both show the evidence and sealed manifest so you can understand what a real adoption decision looks like.
+One example ends in **HOLD**. One ends in **ACCEPT**. Both ship the evidence, the
+sealed manifest, and the things that could *not* be resolved, so you can see what
+a defensible adoption decision actually looks like — including where it stops
+short.
 
-## Examples
+[![verify](https://github.com/icemanrod/safe-adoption-examples/actions/workflows/verify.yml/badge.svg)](https://github.com/icemanrod/safe-adoption-examples/actions/workflows/verify.yml)
 
-### 1. Failing case: `risky-payments-sdk/`
-A real-world-inspired payment SDK with adopter-visible risks:
-- Webhook handler logs full request body before signature validation
-- Submodules partially fetched, leaving gaps in acquisition boundary
-- Undocumented env var for test mode that affects production behavior
+---
 
-**Decision packet**: `risky-payments-sdk/ADOPTION-DECISION.md`
-- Verdict: **HOLD** — material open questions until maintainer confirms log retention policy
-- Conditions for ACCEPT: Written confirmation that logs are rotated <24h
+## Why this repository exists
 
-### 2. Passing case: `safe-utils/`
-A utility library that passed adoption review:
-- No credential handling
-- All dependencies pinned to exact versions
-- Clear API surface, well-documented error paths
-- No undocumented feature flags
+A review that says *"looks fine"* is worth nothing six months later. You cannot
+tell what was read, what was skipped, which revision it applied to, or whether it
+still holds.
 
-**Decision packet**: `safe-utils/ADOPTION-DECISION.md`
-- Verdict: **ACCEPT** — no blocking adopter-visible issues for vendoring as a utility
-- Conditions: Re-review if major version bump or dependency changes
+A decision packet answers those questions in a form that survives:
 
-## How to use this
+- **bound to one revision** — a re-review at a new commit is a new engagement
+- **bound to one intended use** — "vendored utility" and "handles production
+  card data" are different questions about the same code
+- **separates findings from omissions** — a finding is something observed in
+  material that was read; an omission is material that was never read, recorded
+  so nobody mistakes *we saw nothing there* for *there is nothing there*
+- **says who can verify what** — an adopter reading source, or only the
+  maintainer; where only the maintainer can confirm, it stays unresolved rather
+  than being guessed
+- **expires** — when the revision, the scope, or the ruleset moves
 
-1. Read the failing case to understand what adoption review finds
-2. Read the passing case to understand what clean looks like
-3. Look at both decision packets to see the sealed manifest, findings, verdicts, and conditions
-4. The structure is what Repo Sentinel delivers — you customize the findings and rules
+## The examples
 
-## The decision packet format
+### `risky-payments-sdk/` — verdict: **HOLD**
 
-Each packet includes:
-- **Acquisition evidence**: what was actually obtained
-- **Sealed manifest**: scanner identity, source revision, rule definitions (SHA-bound)
-- **Findings**: adopter-safe, verified against source
-- **Omissions**: gaps in coverage, boundaries, missing material (not papered over)
-- **Verdict**: BLOCK / HOLD / REMEDIATE / ACCEPT with conditions
-- **What to watch**: post-adoption monitoring
+A payment SDK with adopter-visible problems:
 
-The binding to exact revision and scope means:
-- A re-review at a new commit is a new engagement
-- Adoption expires when the facts move
-- Human authorization stays with a named person in your org
+| Finding | Where | Who can verify |
+|---|---|---|
+| Full webhook payload logged before signature verification | `apps/webhooks/handler.ts:320` | adopter, from source |
+| Undocumented `PAYMENT_SDK_TEST_MODE` disables rate limiting | `lib/env.ts` | adopter, from source |
+| `test-fixtures` submodule never fetched | `config/submodules` | recorded as an **omission**, not a finding |
 
-## Creating your own decision packet
+It is HOLD rather than BLOCK for a specific reason: the blocking question — *how
+long are those logs retained?* — **cannot be answered from outside the project**.
+The packet says so and names what would turn it into ACCEPT, instead of inventing
+a clean bill of health.
 
-Use the templates in each example. The key fields:
-- `repo`: public URL, exact revision SHA
-- `intended_use`: component, environment, permissions
-- `sealed_manifest`: binds findings to exact scanner state
-- `verdict`: your recommendation (not a cert)
-- `binding`: human authorization name and date
+### `safe-utils/` — verdict: **ACCEPT**
 
-## Questions?
+A small utility library with no credential handling, no network, no environment
+reads, and a surface small enough to read end to end. The packet is explicit that
+ACCEPT means *no adopter-visible blocking issues were found in the material read,
+for this use, at this revision* — not that the library is free of defects.
 
-- Before adoption? Email hello@icemanrod.com for a fit check
-- Ready to buy a review? Visit repo-sentinel.com/pricing
+## What is in each example
+
+```
+example/
+├── README.md                 what it is, and what is deliberately wrong with it
+├── ADOPTION-DECISION.md      the packet, for a human
+├── adoption-decision.json    the same decision, machine-readable
+└── source files              real code that the findings actually cite
+```
+
+## The citations are checkable, and checked
+
+Every path a packet cites exists in the tree, at the line it claims:
+
+```bash
+python3 tools/verify_citations.py
+```
+
+No dependencies, read-only, and it runs in CI on every push.
+
+This matters more than it sounds. The first version of these examples cited three
+files that **were not in the repository at all** — `apps/webhooks/handler.ts`,
+`lib/env.ts`, `config/submodules`. The prose read perfectly and the evidence
+resolved to nothing. That is the exact failure this whole approach argues
+against, and it happened here first. The verifier exists so it cannot happen
+again quietly.
+
+It checks that evidence is *reachable*. It deliberately does **not** check
+whether a finding is *correct* — that is a human judgement, and a script that
+appeared to make it would be the same mistake in a new costume.
+
+## Using the format yourself
+
+The packets are MIT-licensed. Copy `adoption-decision.json` as a starting point.
+The fields that carry the weight:
+
+| Field | Why it matters |
+|---|---|
+| `source.resolved_commit` | the decision is about this revision and no other |
+| `intended_use` | the same code is a different question in a different role |
+| `manifest.ruleset_sha256` | which rules produced this, so drift is detectable |
+| `acquisition.omissions` | what was never read, stated plainly |
+| `findings[].adopter_can_verify` | whether the reader can confirm it themselves |
+| `unresolvable[]` | open questions, kept open |
+| `verdict.expires_when` | the conditions that void the decision |
+| `authorization.authorized_by` | `null` here on purpose — a file cannot authorize |
+
+That last one is the point of the whole format. The packet is a recommendation.
+The authorization is a human act, performed by a named person who accepts the
+risk, and no amount of machine evidence performs it for them.
+
+## These examples are synthetic
+
+`risky-payments-sdk` is not a fork of any real project. The processor is
+fictional, the flaws are deliberate, and no credential in this tree is live.
+Nothing here should be reported as a vulnerability in a third party. See
+[SECURITY.md](SECURITY.md).
+
+## Getting a review
+
+- **Fit check first** — email [hello@icemanrod.com](mailto:hello@icemanrod.com)
+  with the repository URL and what you intend to use it for. No access required.
+- **Ready to go** — [repo-sentinel-olive.vercel.app](https://repo-sentinel-olive.vercel.app)
+
+## Contributing
+
+Corrections are genuinely wanted — especially a packet that claims something the
+evidence does not support. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE). Use the format freely.

@@ -1,0 +1,47 @@
+{
+  "schema": "adoption-decision/v1",
+  "note": "Synthetic example. Not a real project.",
+  "source": {
+    "repo": "https://github.com/example/safe-utils",
+    "resolved_commit": "9f8e7d6c5b4a3210",
+    "requested_ref": "v1.2.1"
+  },
+  "intended_use": {
+    "component": "shared utility library",
+    "environment": "production",
+    "permissions": [
+      "read"
+    ]
+  },
+  "manifest": {
+    "scanner": "repo-sentinel",
+    "ruleset_sha256": "3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a",
+    "manifest_sha256": "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b",
+    "coverage": "static \u00b7 no execution \u00b7 adopter-safe rendering",
+    "acquired_at": "2026-07-27T18:31:55Z"
+  },
+  "acquisition": {
+    "complete": true,
+    "omissions": []
+  },
+  "findings": [],
+  "unresolvable": [],
+  "verdict": {
+    "recommendation": "ACCEPT",
+    "not_a_certification": true,
+    "scope_of_claim": "No adopter-visible blocking issues were found in the material read, for this use, at this revision. This is not a claim that the library is free of defects.",
+    "conditions_for_accept": [
+      "Pin the exact version; do not track a range."
+    ],
+    "expires_when": [
+      "resolved_commit changes",
+      "intended_use changes",
+      "ruleset_sha256 changes"
+    ]
+  },
+  "authorization": {
+    "authorized_by": null,
+    "authorized_at": null,
+    "note": "Left null on purpose."
+  }
+}

@@ -1,0 +1,19 @@
+# Submodule manifest for the acquisition boundary.
+#
+# NOTE FOR READERS OF THE ADOPTION EXAMPLE:
+# The packet records that `test-fixtures` was NOT fetched. That is an OMISSION,
+# not a finding - the difference matters. A finding is something observed in
+# material that was read. An omission is material that was never read, and it is
+# recorded so nobody mistakes "we saw nothing there" for "there is nothing
+# there."
+
+[submodule "vendor/processor-sdk"]
+    path = vendor/processor-sdk
+    url = https://github.com/example/processor-sdk
+    fetched = true
+
+[submodule "test-fixtures"]
+    path = test-fixtures
+    url = https://github.com/example/payment-test-fixtures
+    fetched = false
+    reason = shallow clone did not include this path
